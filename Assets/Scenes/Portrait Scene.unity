@@ -8177,13 +8177,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7a23d98a55620aa5b563638b79cfc42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _wordList: {fileID: 0}
+  _wordList: {fileID: 11400000, guid: 26f9dbf8193c874b69fdae43552df3ee, type: 2}
   _generateOnStart: 1
   _boardSize: {x: 10, y: 10}
   _letterPrefab: {fileID: 4903597917195729719, guid: 494d6f54eaeb10e8ea7e28ec89dd4115, type: 3}
   _letterContainer: {fileID: 928718363}
   _allowDiagonalWords: 1
   _allowBackwardWords: 0
+  _backwardsChance: 0.33
   _maxPlacementAttempts: 100
   _remainingWords: []
   _letterPool:

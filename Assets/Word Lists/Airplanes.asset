@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f12ec3aebe35e0ebba459f790eeef139, type: 3}
+  m_Name: Airplanes
+  m_EditorClassIdentifier: 
+  _name: Aviation
+  _wordsQuickAdd: 
+  _words:
+  - DESTINATION
+  - TURBULENCE
+  - NAVIGATION
+  - PASSENGER
+  - CHECKLIST
+  - PARACHUTE
+  - PROPELLER
+  - AUTOPILOT
+  - SEATBELT
+  - BOARDING
+  - AVIATION
+  - THROTTLE
+  - ALTITUDE
+  - AIRSPEED
+  - FUSELAGE
+  - AIRPLANE
+  - HEADSET
+  - AILERON
+  - TURBINE
+  - CONTROL
+  - CHARTER
+  - UNIFORM
+  - AIRPORT
+  - WEATHER
+  - AIRLINE
+  - LANDING
+  - LUGGAGE
+  - TAKEOFF
+  - HORIZON
+  - COCKPIT
+  - RUNWAY
+  - ENGINE
+  - HANGAR
+  - TARMAC
+  - RUDDER
+  - JETWAY
+  - FLIGHT
+  - CLOUD
+  - PILOT
+  - FLAPS
+  - TOWER
+  - CABIN
+  - FUEL
+  - NOSE
+  - TAIL
+  - WING
+  - CREW
+  - SKY
+  - JET
