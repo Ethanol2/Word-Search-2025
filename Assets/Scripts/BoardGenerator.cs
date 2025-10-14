@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class BoardGenerator : MonoBehaviour
@@ -25,26 +26,49 @@ public class BoardGenerator : MonoBehaviour
 
     void OnValidate()
     {
-        PopulateLetterPool(_boardSize.x * _boardSize.y);
+        if (!Application.isPlaying)
+            PopulateLetterPool(_boardSize.x * _boardSize.y);
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         if (_generateOnStart && _wordList)
-            GenerateBoard(_defaultWordCount);
+            GenerateBoard();
     }
 
+    [ContextMenu("Generate Board")]
+    public void GenerateBoard() => GenerateBoard(_defaultWordCount);
     public void GenerateBoard(int wordCount, bool random = true) => GenerateBoard(_wordList.GetWords(wordCount, random), _boardSize, _allowDiagonalWords, _allowBackwardWords);
     public void GenerateBoard(string[] words) => GenerateBoard(words, _boardSize, _allowDiagonalWords, _allowBackwardWords);
     public void GenerateBoard(string[] words, Vector2Int boardSize) => GenerateBoard(words, boardSize, _allowDiagonalWords, _allowBackwardWords);
     public void GenerateBoard(string[] words, Vector2Int boardSize, bool allowDiagonals, bool allowBackwards)
     {
         int index = 0;
+        char[,] boardChars;
 
-        char[,] boardChars = new char[boardSize.x, boardSize.y];
-        foreach (string word in words)
-            boardChars = FitWord(word, boardChars, allowDiagonals, allowBackwards);
+        int addedWords;
+        int attempts = 0;
+        do
+        {
+            boardChars = new char[boardSize.x, boardSize.y];
+            addedWords = 0;
+            attempts++;
+
+            int[] orientationsCount = allowDiagonals ? new int[] { 0, 0, 0, 0 } : new int[] { 0, 0 };
+            foreach (string word in words)
+            {
+                if (FitWord(word, allowBackwards, ref boardChars, ref orientationsCount))
+                {
+                    addedWords++;
+                }
+            }
+
+        }
+        while (addedWords < words.Length && attempts < _maxPlacementAttempts);
+        
+        if (addedWords < words.Length)
+            Debug.Log($"Added {addedWords} / {words.Length} words");
 
         PopulateLetterPool(boardSize.x * boardSize.y);
 
@@ -93,56 +117,94 @@ public class BoardGenerator : MonoBehaviour
         _letterPool.Add(letterInstance);
         return letterInstance;
     }
-    private char[,] FitWord(string word, char[,] grid, bool allowDiagonal, bool allowBackwards)
+    // Written myself but with heavy reference
+    private int GetWeightedRandom(int[] counts)
+    {
+        float totalWeight = 0f;
+        float[] weights = new float[counts.Length];
+
+        for (int i = 0; i < counts.Length; i++)
+        {
+            weights[i] = 1f / (counts[i] + 1f);
+            totalWeight += weights[i];
+        }
+
+        float random = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
+
+        for (int i = 0; i < counts.Length; i++)
+        {
+            cumulative += weights[i];
+            if (random <= cumulative)
+                return i;
+        }
+
+        Debug.Log("Random failed, returning 0");
+        return 0;
+    }
+    private string ReverseString(string word)
+    {
+        string output = string.Empty;
+        for (int i = word.Length - 1; i >= 0; i--)
+            output += word[i];
+
+        return output;
+    }
+    private bool FitWord(string word, bool allowBackwards, ref char[,] grid, ref int[] orientationsCount)
     {
         // Horizontal: 0, Vertical: 1, Diagonal Up: 2, Diagonal Down: 3
-        int fitLimit = allowDiagonal ? 4 : 3;
-        int fitType = Random.Range(0, fitLimit);
+        int fitLimit = orientationsCount.Length;
+        int fitType = GetWeightedRandom(orientationsCount);
 
         if (allowBackwards ? Random.Range(0f, 1f) <= _backwardsChance : false)
-            word = word.Reverse().ToString();
+            word = ReverseString(word);
 
         int orientationAttempts = 0;
         bool success = false;
 
-        while (orientationAttempts < fitLimit && !success)
+        while (orientationAttempts <= fitLimit)
         {
             switch (fitType)
             {
                 case 0:
-                    success = FitWordStraight(word, word.Length, grid.GetLength(1), true, ref grid);
+                    success = FitWordStraight(word, true, ref grid);
                     break;
                 case 1:
-                    success = FitWordStraight(word, grid.GetLength(0), word.Length, false, ref grid);
+                    success = FitWordStraight(word, false, ref grid);
                     break;
             }
+
+            if (success)
+                break;
 
             orientationAttempts++;
             fitType = (int)Mathf.Repeat(fitType + 1, fitLimit);
         }
 
-        if (!success)
-            Debug.Log("Failed to use word: " + word);
+        if (success)
+            orientationsCount[fitType]++;
 
-        return grid;
+        return success;
     }
-    bool FitWordStraight(string word, int maxX, int maxY, bool horizontal, ref char[,] grid)
+    private bool FitWordStraight(string word, bool horizontal, ref char[,] grid)
     {
         if (word.Length > grid.GetLength(1))
             return false;
 
-        Debug.Log("Adding word: " + word);
-
-        int xIncrement, yIncrement;
+        int xIncrement, yIncrement, maxX, maxY;
         if (horizontal)
         {
             xIncrement = 1;
             yIncrement = 0;
+            maxX = grid.GetLength(0) - word.Length;
+            maxY = grid.GetLength(1);
         }
         else
         {
             xIncrement = 0;
             yIncrement = 1;
+            maxX = grid.GetLength(0);
+            maxY = grid.GetLength(1) - word.Length;
         }
 
         bool safe = true;
@@ -163,9 +225,9 @@ public class BoardGenerator : MonoBehaviour
                 {
                     try
                     {
-                        if (grid[x + xIncrement, y + yIncrement] != '\0')
+                        if (grid[x + (xIncrement * i), y + (yIncrement * i)] != '\0')
                         {
-                            if (grid[x + xIncrement, y + yIncrement] != word[i])
+                            if (grid[x + (xIncrement * i), y + (yIncrement * i)] != word[i])
                             {
                                 safe = false;
                                 break;
@@ -175,6 +237,7 @@ public class BoardGenerator : MonoBehaviour
                     catch (System.Exception e)
                     {
                         Debug.LogError($"Something went wrong. X: {x}, Y: {y}, i: {i}, Word Length: {word.Length}\n\n{e}");
+                        return false;
                     }
                 }
 
@@ -182,7 +245,7 @@ public class BoardGenerator : MonoBehaviour
                 {
                     for (int i = 0; i < word.Length; i++)
                     {
-                        grid[x + xIncrement, y + yIncrement] = word[i];
+                        grid[x + (xIncrement * i), y + (yIncrement * i)] = word[i];
                     }
                     break;
                 }
@@ -280,3 +343,4 @@ public class BoardGenerator : MonoBehaviour
     //     return true;
     // }
 }
+

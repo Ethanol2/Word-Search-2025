@@ -8182,7 +8182,8 @@ MonoBehaviour:
   _boardSize: {x: 10, y: 10}
   _letterPrefab: {fileID: 4903597917195729719, guid: 494d6f54eaeb10e8ea7e28ec89dd4115, type: 3}
   _letterContainer: {fileID: 928718363}
-  _allowDiagonalWords: 1
+  _defaultWordCount: 10
+  _allowDiagonalWords: 0
   _allowBackwardWords: 0
   _backwardsChance: 0.33
   _maxPlacementAttempts: 100
