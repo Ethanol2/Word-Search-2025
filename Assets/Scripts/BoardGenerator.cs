@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using EditorTools;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -39,7 +40,13 @@ public class BoardGenerator : MonoBehaviour
 
     [ContextMenu("Generate Board")]
     public void GenerateBoard() => GenerateBoard(_defaultWordCount);
-    public void GenerateBoard(int wordCount, bool random = true) => GenerateBoard(_wordList.GetWords(wordCount, random), _boardSize, _allowDiagonalWords, _allowBackwardWords);
+    public void GenerateBoard(int wordCount, bool random = true)
+        => GenerateBoard(
+            _wordList.GetWords(wordCount, _boardSize.x > _boardSize.y ? _boardSize.x : _boardSize.y),
+            _boardSize,
+            _allowDiagonalWords,
+            _allowBackwardWords);
+            
     public void GenerateBoard(string[] words) => GenerateBoard(words, _boardSize, _allowDiagonalWords, _allowBackwardWords);
     public void GenerateBoard(string[] words, Vector2Int boardSize) => GenerateBoard(words, boardSize, _allowDiagonalWords, _allowBackwardWords);
     public void GenerateBoard(string[] words, Vector2Int boardSize, bool allowDiagonals, bool allowBackwards)
@@ -68,7 +75,7 @@ public class BoardGenerator : MonoBehaviour
         while (addedWords < words.Length && attempts < _maxPlacementAttempts);
         
         if (addedWords < words.Length)
-            Debug.Log($"Added {addedWords} / {words.Length} words");
+            this.Log($"Added {addedWords} / {words.Length} words");
 
         PopulateLetterPool(boardSize.x * boardSize.y);
 
@@ -109,11 +116,13 @@ public class BoardGenerator : MonoBehaviour
                 GenerateLetter();
             }
         }
+
+        foreach (Letter letter in _letterPool)
+            letter.gameObject.SetActive(false);
     }
     private Letter GenerateLetter()
     {
         Letter letterInstance = Instantiate(_letterPrefab, _letterContainer);
-        letterInstance.gameObject.SetActive(false);
         _letterPool.Add(letterInstance);
         return letterInstance;
     }
@@ -139,7 +148,7 @@ public class BoardGenerator : MonoBehaviour
                 return i;
         }
 
-        Debug.Log("Random failed, returning 0");
+        this.Log("Random failed, returning 0");
         return 0;
     }
     private string ReverseString(string word)
@@ -175,14 +184,14 @@ public class BoardGenerator : MonoBehaviour
             }
 
             if (success)
+            {
+                orientationsCount[fitType]++;
                 break;
+            }
 
             orientationAttempts++;
             fitType = (int)Mathf.Repeat(fitType + 1, fitLimit);
         }
-
-        if (success)
-            orientationsCount[fitType]++;
 
         return success;
     }
@@ -236,7 +245,7 @@ public class BoardGenerator : MonoBehaviour
                     }
                     catch (System.Exception e)
                     {
-                        Debug.LogError($"Something went wrong. X: {x}, Y: {y}, i: {i}, Word Length: {word.Length}\n\n{e}");
+                        this.LogError($"Something went wrong. X: {x}, Y: {y}, i: {i}, Word Length: {word.Length}\n\n{e}");
                         return false;
                     }
                 }

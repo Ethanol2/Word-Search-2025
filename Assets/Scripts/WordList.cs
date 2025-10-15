@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using EditorTools;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "WordList", menuName = "Scriptable Objects/WordList")]
@@ -30,31 +31,19 @@ public class WordList : ScriptableObject
         _words = wordsList.Distinct().ToList();
     }
     
-    public string[] GetWords(int count, bool random = true)
+    public string[] GetWords(int count, int maxLength)
     {
-        List<string> selectedWords = new List<string>();
+        List<string> output = _words.Where((x) => x.Length <= maxLength).ToList();
+        output.OrderBy(x => Random.value);
 
-        if (random)
-        {
-            List<int> selectedIndexes = new List<int>();
-
-            while (selectedWords.Count < count)
-            {
-                int index;
-                do
-                    index = Random.Range(0, _words.Count);
-                while (selectedIndexes.Contains(index));
-
-                selectedWords.Add(_words[index]);
-                selectedIndexes.Add(index);
-            }
-        }
+        if (output.Count < count)
+            this.Log($"There are fewer words than {count}, equal to or shorter than {maxLength} chars. Returned word count: {output.Count}");
         else
-        {
-            selectedWords = _words.GetRange(0, count);
-        }
+            output = output.GetRange(0, count);
+        
+        output.Sort((x, y) => x.Length > y.Length ? -1 : 1);
 
-        selectedWords.Sort((x, y) => x.Length > y.Length ? -1 : 1);
-        return selectedWords.ToArray();
+            
+        return output.ToArray();
     }
 }
