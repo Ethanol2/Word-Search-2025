@@ -34,15 +34,21 @@ public class WordList : ScriptableObject
     public string[] GetWords(int count, int maxLength)
     {
         List<string> output = _words.Where((x) => x.Length <= maxLength).ToList();
-        output.OrderBy(x => Random.value);
+        output = output.OrderBy(x => Random.value).ToList();
 
         if (output.Count < count)
             this.Log($"There are fewer words than {count}, equal to or shorter than {maxLength} chars. Returned word count: {output.Count}");
         else
             output = output.GetRange(0, count);
-        
+
         output.Sort((x, y) => x.Length > y.Length ? -1 : 1);
 
+        string log = "";
+        foreach (string word in output)
+            log += word + ", ";
+
+        log = log[..(log.Length - 2)];
+        this.Log(log);
             
         return output.ToArray();
     }

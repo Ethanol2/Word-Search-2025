@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
 using EditorTools;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class BoardGenerator : MonoBehaviour
@@ -16,14 +14,24 @@ public class BoardGenerator : MonoBehaviour
 
     [Space]
     [SerializeField] private int _defaultWordCount = 10;
-    [SerializeField] private bool _allowDiagonalWords = true;
-    [SerializeField] private bool _allowBackwardWords = true;
+    [SerializeField] private Placement _defaultPlacement = Placement.HORIZONTAL & Placement.VERTICAL & Placement.DIAGONAL_DOWN & Placement.DIAGONAL_UP;
+    [SerializeField] private bool _defaultAllowBackwards = false;
     [SerializeField, Range(0f, 1f)] private float _backwardsChance = 0.33f;
     [SerializeField] private int _maxPlacementAttempts = 100;
 
     [Header("Debug")]
     [SerializeField] private List<string> _remainingWords;
     [SerializeField] private List<Letter> _letterPool;
+
+    [System.Flags]
+    public enum Placement
+    {
+        HORIZONTAL = 1 << 0,
+        VERTICAL = 1 << 1,
+        DIAGONAL_UP = 1 << 2,
+        DIAGONAL_DOWN = 1 << 3,
+        ALL = ~0
+    }
 
     void OnValidate()
     {
@@ -40,19 +48,19 @@ public class BoardGenerator : MonoBehaviour
 
     [ContextMenu("Generate Board")]
     public void GenerateBoard() => GenerateBoard(_defaultWordCount);
-    public void GenerateBoard(int wordCount, bool random = true)
+    public void GenerateBoard(int wordCount)
         => GenerateBoard(
             _wordList.GetWords(wordCount, _boardSize.x > _boardSize.y ? _boardSize.x : _boardSize.y),
             _boardSize,
-            _allowDiagonalWords,
-            _allowBackwardWords);
+            _defaultPlacement,
+            _defaultAllowBackwards);
             
-    public void GenerateBoard(string[] words) => GenerateBoard(words, _boardSize, _allowDiagonalWords, _allowBackwardWords);
-    public void GenerateBoard(string[] words, Vector2Int boardSize) => GenerateBoard(words, boardSize, _allowDiagonalWords, _allowBackwardWords);
-    public void GenerateBoard(string[] words, Vector2Int boardSize, bool allowDiagonals, bool allowBackwards)
+    public void GenerateBoard(string[] words) => GenerateBoard(words, _boardSize, _defaultPlacement, _defaultAllowBackwards);
+    public void GenerateBoard(string[] words, Vector2Int boardSize) => GenerateBoard(words, boardSize, _defaultPlacement, _defaultAllowBackwards);
+    public void GenerateBoard(string[] words, Vector2Int boardSize, Placement placementFilter, bool allowBackwards)
     {
         int index = 0;
-        char[,] boardChars;
+        char[,] boardChars;        
 
         int addedWords;
         int attempts = 0;
@@ -62,7 +70,8 @@ public class BoardGenerator : MonoBehaviour
             addedWords = 0;
             attempts++;
 
-            int[] orientationsCount = allowDiagonals ? new int[] { 0, 0, 0, 0 } : new int[] { 0, 0 };
+            int[] orientationsCount = new int[4];
+
             foreach (string word in words)
             {
                 if (FitWord(word, allowBackwards, ref boardChars, ref orientationsCount))
@@ -173,18 +182,9 @@ public class BoardGenerator : MonoBehaviour
 
         while (orientationAttempts <= fitLimit)
         {
-            switch (fitType)
+            if (success = PlaceWord(word, fitType, ref grid))
             {
-                case 0:
-                    success = FitWordStraight(word, true, ref grid);
-                    break;
-                case 1:
-                    success = FitWordStraight(word, false, ref grid);
-                    break;
-            }
-
-            if (success)
-            {
+                success = true;
                 orientationsCount[fitType]++;
                 break;
             }
@@ -195,25 +195,50 @@ public class BoardGenerator : MonoBehaviour
 
         return success;
     }
-    private bool FitWordStraight(string word, bool horizontal, ref char[,] grid)
+    private bool PlaceWord(string word, int type, ref char[,] grid)
     {
         if (word.Length > grid.GetLength(1))
             return false;
 
-        int xIncrement, yIncrement, maxX, maxY;
-        if (horizontal)
+        int xIncrement, yIncrement, maxX, maxY, minY;
+
+        switch (type)
         {
-            xIncrement = 1;
-            yIncrement = 0;
-            maxX = grid.GetLength(0) - word.Length;
-            maxY = grid.GetLength(1);
-        }
-        else
-        {
-            xIncrement = 0;
-            yIncrement = 1;
-            maxX = grid.GetLength(0);
-            maxY = grid.GetLength(1) - word.Length;
+            case 0:
+                xIncrement = 1;
+                yIncrement = 0;
+                maxX = grid.GetLength(0) - word.Length + 1;
+                minY = 0;
+                maxY = grid.GetLength(1);
+                break;
+
+            case 1:
+                xIncrement = 0;
+                yIncrement = 1;
+                maxX = grid.GetLength(0);
+                minY = 0;
+                maxY = grid.GetLength(1) - word.Length + 1;
+                break;
+
+            case 2:
+                xIncrement = 1;
+                yIncrement = -1;
+                maxX = grid.GetLength(0) - word.Length + 1;
+                minY = word.Length;
+                maxY = grid.GetLength(1);
+                break;
+
+            case 3:
+                xIncrement = 1;
+                yIncrement = 1;
+                maxX = grid.GetLength(0) - word.Length + 1;
+                minY = 0;
+                maxY = grid.GetLength(1) - word.Length + 1;
+                break;
+
+            default:
+                this.LogError("Unhandled type: " + type);
+                return false;
         }
 
         bool safe = true;
@@ -223,10 +248,10 @@ public class BoardGenerator : MonoBehaviour
             x = x1 + x2;
             x = x >= maxX ? x - maxX : x;
 
-            for (int y1 = Random.Range(0, maxY), y2 = 0, y; y2 < maxY; y2++)
+            for (int y1 = Random.Range(0, maxY - minY), y2 = minY, y; y2 < maxY; y2++)
             {
                 y = y1 + y2;
-                y = y >= maxY ? y - maxY : y;
+                y = y >= maxY ? y - maxY + minY : y;
 
                 safe = true;
 
@@ -245,7 +270,9 @@ public class BoardGenerator : MonoBehaviour
                     }
                     catch (System.Exception e)
                     {
-                        this.LogError($"Something went wrong. X: {x}, Y: {y}, i: {i}, Word Length: {word.Length}\n\n{e}");
+                        this.LogError(
+                            $"Something went wrong placing the word \"{word}\" in orientation {type}\n Position: {x}, {y}\n i: {i}, Word Length: {word.Length}" +
+                            $"\n X Limits: {maxX}\n Y Limits: {minY}, {maxY} \n\n{e}");
                         return false;
                     }
                 }
@@ -266,90 +293,10 @@ public class BoardGenerator : MonoBehaviour
         return safe;
     }
 
-    // bool FitWordDiagonal(string word, ref bool diaDown, bool backwards, ref Vector2Int startPos)
-    // {
-    //     int startRange = gridSize - word.Length;
-    //     int dirCount = 0;
-    //     int startCount = 0;
-    //     bool safe;
-
-    //     do
-    //     {
-    //         safe = true;
-
-    //         // Diagonal Down
-    //         if (diaDown)
-    //         {
-    //             do
-    //             {
-    //                 safe = true;
-    //                 startCount++;
-    //                 startPos.x = Random.Range(0, startRange);
-    //                 startPos.y = Random.Range(0, startRange);
-    //                 for (int k = 0; k < word.Length; k++)
-    //                 {
-    //                     if (CheckFilled(new Vector2Int(startPos.x + k, startPos.y + k)))
-    //                     {
-    //                         if (grid[startPos.x + k, startPos.y + k] != word[k] && !backwards)
-    //                         {
-    //                             safe = false;
-    //                         }
-    //                         else if (grid[startPos.x + k, startPos.y + k] != word[word.Length - 1 - k] && backwards)
-    //                         {
-    //                             safe = false;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             while (!safe && startCount <= startRange * startRange);
-
-    //             if (startCount >= startRange * startRange && !safe)
-    //             {
-    //                 dirCount++;
-    //                 diaDown = !diaDown;
-    //                 startCount = 0;
-    //             }
-    //         }
-    //         // Diagonal Up
-    //         else if (!diaDown)
-    //         {
-    //             do
-    //             {
-    //                 safe = true;
-    //                 startCount++;
-    //                 startPos.x = Random.Range(0, startRange);
-    //                 startPos.y = Random.Range(gridSize - startRange, gridSize);
-    //                 for (int k = 0; k < word.Length; k++)
-    //                 {
-    //                     if (CheckFilled(new Vector2Int(startPos.x + k, startPos.y - k)))
-    //                     {
-    //                         if (grid[startPos.x + k, startPos.y - k] != word[k] && !backwards)
-    //                         {
-    //                             safe = false;
-    //                         }
-    //                         else if (grid[startPos.x + k, startPos.y - k] != word[word.Length - 1 - k] && backwards)
-    //                         {
-    //                             safe = false;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             while (!safe && startCount <= startRange * startRange && !safe);
-
-    //             if (startCount >= startRange * startRange && !safe)
-    //             {
-    //                 dirCount++;
-    //                 diaDown = !diaDown;
-    //                 startCount = 0;
-    //             }
-    //         }
-    //     } while (!safe && dirCount <= 1);
-
-    //     if (dirCount >= 2)
-    //     {
-    //         return false;
-    //     }
-    //     return true;
-    // }
+    public struct Word
+    {
+        public string Value;
+        public Vector2Int Position;
+        public Placement Placement;
+    }
 }
-
