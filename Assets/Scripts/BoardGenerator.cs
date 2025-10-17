@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EditorTools;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class BoardGenerator : MonoBehaviour
 {
@@ -26,7 +27,19 @@ public class BoardGenerator : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private List<Word> _currentWords;
+    [SerializeField] private Letter[,] _currentGrid;
+    [SerializeField] private Vector2Int _currentGridSize;
     [SerializeField] private List<Letter> _letterPool;
+
+    private Vector2 _currentLetterSize;
+
+    public Word[] CurrentWords => _currentWords.ToArray();
+    public Letter[,] CurrentGrid => _currentGrid;
+    public Vector2 CurrentLetterSize => _currentLetterSize;
+
+    [Space]
+    public UnityEvent OnGenerated;
+    public event System.Action OnBoardGenerated;
 
     public enum Placement
     {
@@ -87,15 +100,17 @@ public class BoardGenerator : MonoBehaviour
             this.Log($"Added {wordObjects.Count} / {words.Length} words");
 
         PopulateLetterPool(boardSize.x * boardSize.y);
+        _currentGrid = new Letter[boardSize.x, boardSize.y];
 
         for (int y = 0; y < boardSize.y; y++)
         {
             for (int x = 0; x < boardSize.x; x++)
             {
                 Letter letter = _letterPool[index];
+                _currentGrid[x, y] = letter;
 
                 letter.gameObject.SetActive(true);
-                letter.Char = boardChars[x, y] == '\0' ? '\0' /*(char)Random.Range(65, 91)*/ : boardChars[x, y];
+                letter.Char = boardChars[x, y] == '\0' ? (char)Random.Range(65, 91) : boardChars[x, y];
                 SetAnchors(letter.transform as RectTransform, x, y, boardSize.x, boardSize.y, 0f);
 
                 index++;
@@ -103,6 +118,11 @@ public class BoardGenerator : MonoBehaviour
         }
 
         _currentWords = wordObjects;
+        _currentGridSize = boardSize;
+        _currentLetterSize = ((RectTransform)_currentGrid[0, 0].transform).rect.size;
+
+        OnBoardGenerated?.Invoke();
+        OnGenerated.Invoke();
         return wordObjects;
     }
 
@@ -117,6 +137,32 @@ public class BoardGenerator : MonoBehaviour
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
     }
+    public Vector2Int GetCoords(Vector3 localPosition)
+    {
+        Rect letterRect = (_currentGrid[0, 0].transform as RectTransform).rect;
+
+        localPosition.x += _currentGridSize.x * (letterRect.size.x / 2f);
+        localPosition.y += _currentGridSize.y * (letterRect.size.y / 2f);        
+
+        return new Vector2Int()
+        {
+            x = Mathf.FloorToInt(localPosition.x / letterRect.size.x),
+            y = _currentGridSize.y - Mathf.FloorToInt(localPosition.y / letterRect.size.y) - 1
+        };
+    }
+    public bool GetLetterAtPosition(Vector3 localPosition, out Letter letter, out Vector2Int coordinates)
+    {
+        coordinates = GetCoords(localPosition);
+
+        if (coordinates.x >= 0 && coordinates.x < _currentGridSize.x && coordinates.y >= 0 && coordinates.y < _currentGridSize.y)
+        {
+            letter = _currentGrid[coordinates.x, coordinates.y];
+            return true;
+        }
+
+        letter = null;
+        return false;
+    }
     private void PopulateLetterPool(int count)
     {
         if (_letterContainer && _letterPrefab && _letterPool.Count < count)
@@ -125,6 +171,14 @@ public class BoardGenerator : MonoBehaviour
 
             for (int i = 0; i < toAdd; i++)
             {
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                {
+                    var newLetter = UnityEditor.PrefabUtility.InstantiatePrefab(_letterPrefab, _letterContainer) as Letter;
+                    _letterPool.Add(newLetter);
+                }
+                else
+#endif
                 GenerateLetter();
             }
         }
