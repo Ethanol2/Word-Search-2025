@@ -3,8 +3,10 @@ using EditorTools;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class BoardGenerator : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
+    #region Inspector
+
     [SerializeField] private WordList _wordList;
     [SerializeField] private bool _generateOnStart = true;
 
@@ -37,30 +39,36 @@ public class BoardGenerator : MonoBehaviour
     public Letter[,] CurrentGrid => _currentGrid;
     public Vector2 CurrentLetterSize => _currentLetterSize;
 
+    #endregion
+
+    #region Events
+
     [Space]
     public UnityEvent OnGenerated;
     public event System.Action OnBoardGenerated;
+    public UnityEvent<string> OnWordFound;
+    public event System.Action<string> OnWordDiscovered;
+    public UnityEvent OnAllWordsFound;
+    public event System.Action OnAllWordsDiscovered;
 
-    public enum Placement
-    {
-        HORIZONTAL = 0,
-        VERTICAL = 1,
-        DIAGONAL_UP = 2,
-        DIAGONAL_DOWN = 3
-    }
+    #endregion
 
+    #region LifeCycle
     void OnValidate()
     {
         if (!Application.isPlaying)
             PopulateLetterPool(_boardSize.x * _boardSize.y);
     }
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         if (_generateOnStart && _wordList)
             GenerateBoard();
     }
+
+    #endregion
+
+    #region Public Methods
 
     [ContextMenu("Generate Board")]
     public List<Word> GenerateBoard() => GenerateBoard(_defaultWordCount);
@@ -69,7 +77,7 @@ public class BoardGenerator : MonoBehaviour
             _wordList.GetWords(wordCount, _boardSize.x > _boardSize.y ? _boardSize.x : _boardSize.y),
             _boardSize,
             _defaultPlacementSettings);
-            
+
     public List<Word> GenerateBoard(string[] words) => GenerateBoard(words, _boardSize, _defaultPlacementSettings);
     public List<Word> GenerateBoard(string[] words, Vector2Int boardSize) => GenerateBoard(words, boardSize, _defaultPlacementSettings);
     public List<Word> GenerateBoard(string[] words, Vector2Int boardSize, PlacementSettings placementSettings)
@@ -95,7 +103,7 @@ public class BoardGenerator : MonoBehaviour
 
         }
         while (wordObjects.Count < words.Length && attempts < _maxPlacementAttempts);
-        
+
         if (wordObjects.Count < words.Length)
             this.Log($"Added {wordObjects.Count} / {words.Length} words");
 
@@ -108,6 +116,7 @@ public class BoardGenerator : MonoBehaviour
             {
                 Letter letter = _letterPool[index];
                 _currentGrid[x, y] = letter;
+                letter.SetCoordinates(x, y);
 
                 letter.gameObject.SetActive(true);
                 letter.Char = boardChars[x, y] == '\0' ? (char)Random.Range(65, 91) : boardChars[x, y];
@@ -126,7 +135,6 @@ public class BoardGenerator : MonoBehaviour
         return wordObjects;
     }
 
-    // Utility
     public static void SetAnchors(RectTransform rect, int x, int y, int xCount, int yCount, float padding)
     {
         // To flip the y placement
@@ -142,7 +150,7 @@ public class BoardGenerator : MonoBehaviour
         Rect letterRect = (_currentGrid[0, 0].transform as RectTransform).rect;
 
         localPosition.x += _currentGridSize.x * (letterRect.size.x / 2f);
-        localPosition.y += _currentGridSize.y * (letterRect.size.y / 2f);        
+        localPosition.y += _currentGridSize.y * (letterRect.size.y / 2f);
 
         return new Vector2Int()
         {
@@ -150,9 +158,9 @@ public class BoardGenerator : MonoBehaviour
             y = _currentGridSize.y - Mathf.FloorToInt(localPosition.y / letterRect.size.y) - 1
         };
     }
-    public bool GetLetterAtPosition(Vector3 localPosition, out Letter letter, out Vector2Int coordinates)
+    public bool GetLetterAtPosition(Vector3 localPosition, out Letter letter)
     {
-        coordinates = GetCoords(localPosition);
+        Vector2Int coordinates = GetCoords(localPosition);
 
         if (coordinates.x >= 0 && coordinates.x < _currentGridSize.x && coordinates.y >= 0 && coordinates.y < _currentGridSize.y)
         {
@@ -163,6 +171,44 @@ public class BoardGenerator : MonoBehaviour
         letter = null;
         return false;
     }
+
+    public bool CheckInputSelection(string word, Vector2Int coordinates)
+    {
+        foreach (Word wordObj in _currentWords)
+        {
+            if (wordObj.Value == word && wordObj.Position == coordinates)
+            {
+                if (wordObj.Found)
+                    return false;
+
+                OnWordFound.Invoke(word);
+                OnWordDiscovered?.Invoke(word);
+
+                wordObj.Found = true;
+                if (AllWordsFound())
+                {
+                    OnAllWordsDiscovered?.Invoke();
+                    OnAllWordsFound.Invoke();
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+    public bool AllWordsFound()
+    {
+        bool output = true;
+        foreach (Word word in _currentWords)
+            output = output && word.Found;
+        return output;
+    }
+
+    #endregion
+
+    #region Private Methods
+
     private void PopulateLetterPool(int count)
     {
         if (_letterContainer && _letterPrefab && _letterPool.Count < count)
@@ -179,7 +225,7 @@ public class BoardGenerator : MonoBehaviour
                 }
                 else
 #endif
-                GenerateLetter();
+                    GenerateLetter();
             }
         }
 
@@ -251,7 +297,7 @@ public class BoardGenerator : MonoBehaviour
 
                 orientationAttempts++;
             }
-            
+
             placement = (int)placement + 1 > 3 ? Placement.HORIZONTAL : placement + 1;
         }
 
@@ -365,12 +411,17 @@ public class BoardGenerator : MonoBehaviour
         return safe;
     }
 
+    #endregion
+
+    #region Support Objects
+
     [System.Serializable]
     public class Word
     {
         public string Value;
         public Vector2Int Position;
         public Placement Placement;
+        public bool Found = false;
     }
     [System.Serializable]
     public struct PlacementSettings
@@ -396,4 +447,14 @@ public class BoardGenerator : MonoBehaviour
             return output;
         }
     }
+
+    public enum Placement
+    {
+        HORIZONTAL = 0,
+        VERTICAL = 1,
+        DIAGONAL_UP = 2,
+        DIAGONAL_DOWN = 3
+    }
+
+    #endregion
 }
