@@ -7,6 +7,10 @@ public class GameManager : MonoBehaviour
 {
     #region Inspector
 
+    [Header("Game Settings")]
+    [SerializeField] private Color _correctSelectionColour = Color.green;
+
+    [Header("Generation Settings")]
     [SerializeField] private WordList _wordList;
     [SerializeField] private bool _generateOnStart = true;
 
@@ -38,6 +42,8 @@ public class GameManager : MonoBehaviour
     public Word[] CurrentWords => _currentWords.ToArray();
     public Letter[,] CurrentGrid => _currentGrid;
     public Vector2 CurrentLetterSize => _currentLetterSize;
+
+    public Color CorrectSelectionColour => _correctSelectionColour;
 
     #endregion
 

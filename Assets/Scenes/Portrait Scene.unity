@@ -9678,6 +9678,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7a23d98a55620aa5b563638b79cfc42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _correctSelectionColour: {r: 0.4941179, g: 0.87835807, b: 0.4941179, a: 1}
   _wordList: {fileID: 11400000, guid: 26f9dbf8193c874b69fdae43552df3ee, type: 2}
   _generateOnStart: 1
   _boardSize: {x: 10, y: 10}

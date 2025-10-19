@@ -16,7 +16,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
     [SerializeField] private Letter _startLetter;
     [SerializeField] private Vector3 _endPosition;
     [SerializeField] Vector3 _diagonalVector;
-    [SerializeField] private List<Image> _selections = new List<Image>();
+    [SerializeField] private List<RectTransform> _selections = new List<RectTransform>();
 
     [Space]
     [SerializeField] private List<Letter> _selectedLetters = new List<Letter>();
@@ -78,8 +78,10 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
         }
 
         direction.x = direction.x < 0f ? -absDirX : absDirX;
-
         _activeSelection.right = direction;
+
+        float offset = distance % letterDist;
+        distance = offset < letterDist / 2f ? distance - offset : distance + (letterDist - offset);
         _endPosition = _startLetter.RectTransform.localPosition + (distance * direction);
 
         Vector3 size = new Vector2(distance + _manager.CurrentLetterSize.x, _activeSelection.sizeDelta.y);
@@ -92,24 +94,28 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
 
 
         // Get Selected Letters
-        _selectedLetters.Clear();
-        _selectedLetters.Add(_startLetter);
+        List<Letter> newSelection = new List<Letter>() { _startLetter };
         _selectedLettersString = _startLetter.String;
 
         Vector2Int intDirection = Vector2Int.RoundToInt(direction);
         intDirection.y = -intDirection.y;
         
         Vector2Int coord;
-        for (int i = 1; i < distance / letterDist; i++)
+        for (int i = 1; i < (distance / letterDist) + 1; i++)
         {
             coord = _startLetter.Coordinates + (intDirection * i);
 
-            if (coord.x > _manager.CurrentGrid.GetLength(0) || coord.x < 0 || coord.y > _manager.CurrentGrid.GetLength(1) || coord.y < 0)
+            if (coord.x >= _manager.CurrentGrid.GetLength(0) || coord.x < 0 || coord.y >= _manager.CurrentGrid.GetLength(1) || coord.y < 0)
                 break;
 
-            _selectedLetters.Add(_manager.CurrentGrid[coord.x, coord.y]);
-            _selectedLettersString += _selectedLetters.Last().String;
+            Letter letter = _manager.CurrentGrid[coord.x, coord.y];
+            newSelection.Add(letter);
+            _selectedLettersString += letter.String;
+
+            if (!_selectedLetters.Contains(letter))
+                letter.PlayHighlightAnimation();
         }
+        _selectedLetters = newSelection;
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -137,11 +143,56 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        _manager.CheckInputSelection(_selectedLettersString, _startLetter.Coordinates);
-
         if (_activeSelection)
-            Destroy(_activeSelection.gameObject);
+        {
+            if (_manager.CheckInputSelection(_selectedLettersString, _startLetter.Coordinates))
+            {
+                _selections.Add(_activeSelection);
+                _activeSelection.gameObject.GetComponent<Image>().color = _manager.CorrectSelectionColour;
+                _activeSelection = null;
+            }
+            else
+            {
+                Destroy(_activeSelection.gameObject);
+            }
+        }
     }
 
-    private Vector3 ConvertPosition(Vector2 screenPosition) => _lettersParent.InverseTransformPoint(screenPosition);
+    private Vector3 ConvertPosition(Vector2 screenPosition) =>
+        GetPointOrClosestPerimeterPoint(_lettersParent.rect, _lettersParent.InverseTransformPoint(screenPosition));
+    
+    // Gemini Method
+    /// <summary>
+    /// Returns the input point if it's inside the Rect, otherwise returns the closest point on the Rect's perimeter.
+    /// </summary>
+    /// <param name="rect">The Rect to check against.</param>
+    /// <param name="point">The point to evaluate.</param>
+    /// <returns>The point itself if inside the Rect, or the closest point on the Rect's perimeter.</returns>
+    public static Vector2 GetPointOrClosestPerimeterPoint(Rect rect, Vector2 point)
+    {
+        rect.size *= 0.95f;
+
+        if (rect.Contains(point))
+        {
+            return point;
+        }
+
+        // If the point is outside, find the closest point on the perimeter.
+        float closestX = Mathf.Clamp(point.x, rect.xMin, rect.xMax);
+        float closestY = Mathf.Clamp(point.y, rect.yMin, rect.yMax);
+
+        // Determine which edge is closest if the point is outside the clamped region
+        // This logic handles points directly on the corners or edges correctly.
+        if (point.x < rect.xMin) closestX = rect.xMin;
+        else if (point.x > rect.xMax) closestX = rect.xMax;
+
+        if (point.y < rect.yMin) closestY = rect.yMin;
+        else if (point.y > rect.yMax) closestY = rect.yMax;
+
+        // If the point is outside the rectangle's bounds,
+        // one of the clamped coordinates will be on an edge.
+        // If it's a corner, both will be on an edge.
+        // If it's directly outside an edge, one will be clamped to that edge.
+        return new Vector2(closestX, closestY);
+    }
 }

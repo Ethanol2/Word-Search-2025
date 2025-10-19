@@ -146,6 +146,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4589834463254640846}
   - component: {fileID: 4903597917195729719}
+  - component: {fileID: 1789847229448600851}
   m_Layer: 5
   m_Name: Letter
   m_TagString: Untagged
@@ -187,3 +188,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _text: {fileID: 5063497460831282555}
   _letter: A
+  _coordinates: {x: 0, y: 0}
+  _animation: {fileID: 1789847229448600851}
+  _highlightAnim: {fileID: 7400000, guid: d884c96f81539f8b5bf82fd8216987ce, type: 2}
+--- !u!111 &1789847229448600851
+Animation:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2760076685040889651}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Animation: {fileID: 0}
+  m_Animations: []
+  m_WrapMode: 0
+  m_PlayAutomatically: 0
+  m_AnimatePhysics: 0
+  m_UpdateMode: 0
+  m_CullingType: 0
