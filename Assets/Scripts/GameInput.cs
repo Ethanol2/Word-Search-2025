@@ -25,6 +25,17 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
     [Space]
     [SerializeField] private Transform _debugMarker;
 
+    private Rect _selectionArea;
+
+    void Start()
+    {
+        _selectionArea = _lettersParent.rect;
+        Vector2 position = _selectionArea.position;
+        _selectionArea.xMin *= 0.95f;
+        _selectionArea.xMax *= 0.95f;
+        _selectionArea.yMin *= 0.95f;
+        _selectionArea.yMax *= 0.95f;
+    }
     void OnEnable()
     {
         _manager.OnBoardGenerated += OnBoardGenerated;
@@ -54,12 +65,14 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
 
         float absDirX = Mathf.Abs(direction.x);
         float letterDist;
+        float selectionWidth;
 
         if (absDirX < _diagonalVector.x / 2f)
         {
             absDirX = 0f;
             direction.y = direction.y < 0f ? -1f : 1f;
 
+            selectionWidth = _manager.CurrentLetterSize.x;
             letterDist = _manager.CurrentLetterSize.y;
         }
         else if (absDirX > _diagonalVector.x / 2f && absDirX < ((1f - _diagonalVector.x) / 2f) + _diagonalVector.x)
@@ -67,6 +80,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
             absDirX = _diagonalVector.x;
             direction.y = direction.y < 0f ? _diagonalVector.y : -_diagonalVector.y;
 
+            selectionWidth = Mathf.Lerp(_manager.CurrentLetterSize.x, _manager.CurrentLetterSize.y, 0.5f); 
             letterDist = _manager.CurrentLetterSize.magnitude;
         }
         else
@@ -74,6 +88,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
             absDirX = 1f;
             direction.y = 0f;
 
+            selectionWidth = _manager.CurrentLetterSize.y;
             letterDist = _manager.CurrentLetterSize.x;
         }
 
@@ -84,7 +99,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
         distance = offset < letterDist / 2f ? distance - offset : distance + (letterDist - offset);
         _endPosition = _startLetter.RectTransform.localPosition + (distance * direction);
 
-        Vector3 size = new Vector2(distance + _manager.CurrentLetterSize.x, _activeSelection.sizeDelta.y);
+        Vector3 size = new Vector2(distance + _manager.CurrentLetterSize.x, selectionWidth);
         size.x = Mathf.Clamp(size.x, _manager.CurrentLetterSize.x, float.MaxValue);
         size.y = Mathf.Clamp(size.y, _manager.CurrentLetterSize.y, float.MaxValue);
 
@@ -159,7 +174,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
     }
 
     private Vector3 ConvertPosition(Vector2 screenPosition) =>
-        GetPointOrClosestPerimeterPoint(_lettersParent.rect, _lettersParent.InverseTransformPoint(screenPosition));
+        GetPointOrClosestPerimeterPoint(_selectionArea, _lettersParent.InverseTransformPoint(screenPosition));
     
     // Gemini Method
     /// <summary>
@@ -170,8 +185,6 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
     /// <returns>The point itself if inside the Rect, or the closest point on the Rect's perimeter.</returns>
     public static Vector2 GetPointOrClosestPerimeterPoint(Rect rect, Vector2 point)
     {
-        rect.size *= 0.95f;
-
         if (rect.Contains(point))
         {
             return point;

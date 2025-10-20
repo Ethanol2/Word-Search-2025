@@ -16,6 +16,7 @@ namespace EditorTools
             Debug.LogWarning($"[{origin.GetType().Name}] {message}", context);
         }
 
+        public static void LogErrorDirect(object origin, object message) => LogError(origin, message);
         public static void LogError(this object origin, object message) => LogError(origin, message, null);
         public static void LogError(this object origin, object message, Object context)
         {

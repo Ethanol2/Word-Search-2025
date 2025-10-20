@@ -1,12 +1,14 @@
 using EditorTools;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Letter : MonoBehaviour
 {
     private const string HIGHLIGHT_ANIM = "highlight";
 
-    [SerializeField] private TMP_Text _text;
+    [SerializeField] private Image _letterImage;
+    [SerializeField] private WordSearchFont _font;
     [SerializeField] private string _letter = "A";
     [SerializeField] private Vector2Int _coordinates = new Vector2Int();
 
@@ -15,19 +17,29 @@ public class Letter : MonoBehaviour
     [SerializeField] private AnimationClip _highlightAnim;
 
     public char Char { get => _letter.Length > 0 ? _letter[0] : '\0'; set => String = value.ToString(); }
-    public string String { get => _letter; set { _letter = value; name = value; if (_text) _text.text = _letter; } }
+    public string String { get => _letter; set { _letter = value; name = value; SetLetterSprite(_letter[0]); } }
     public RectTransform RectTransform => this.transform as RectTransform;
     public Vector2Int Coordinates => _coordinates;
 
     void OnValidate()
     {
-        _text = GetComponentInChildren<TMP_Text>();
-        if (_text)
-            _text.text = _letter;
+        _letterImage = GetComponentInChildren<Image>();
+        _letter = _letter.ToUpper();
+        if (_letterImage && _font)
+        {
+            _letterImage.sprite = _font.GetLetter(Char);
+        }
     }
     void Start()
     {
         _animation.AddClip(_highlightAnim, HIGHLIGHT_ANIM);
+    }
+    private void SetLetterSprite(char letter)
+    {
+        if (_letterImage && _font)
+        {
+            _letterImage.sprite = _font.GetLetter(letter);
+        }
     }
 
     public void SetCoordinates(int x, int y) => _coordinates.Set(x, y);
