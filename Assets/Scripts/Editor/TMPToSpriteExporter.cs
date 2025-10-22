@@ -24,8 +24,8 @@ public class TMPToSpriteExporter
         string path = EditorUtility.OpenFilePanel("Select TMP Font Asset", "Assets", "asset");
         if (string.IsNullOrEmpty(path))
             return;
-            
-            path = "Assets" + path.Substring(Application.dataPath.Length);
+
+        path = "Assets" + path.Substring(Application.dataPath.Length);
         tmpFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
 
         outputFolder = "Assets/Fonts/LetterSprites/" + Path.GetFileNameWithoutExtension(path) + "/";
@@ -52,7 +52,7 @@ public class TMPToSpriteExporter
         TextMeshPro tmp = tmpGO.AddComponent<TextMeshPro>();
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.autoSizeTextContainer = true;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
         tmp.raycastTarget = false;
 
         // Apply font if provided (optional)

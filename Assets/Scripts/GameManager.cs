@@ -21,7 +21,8 @@ public class GameManager : MonoBehaviour
 
     [Space]
     [SerializeField] private int _defaultWordCount = 10;
-    [SerializeField] private PlacementSettings _defaultPlacementSettings = new PlacementSettings()
+    [SerializeField]
+    private PlacementSettings _defaultPlacementSettings = new PlacementSettings()
     {
         Horizontal = true,
         Vertical = true,
@@ -50,8 +51,8 @@ public class GameManager : MonoBehaviour
     #region Events
 
     [Space]
-    public UnityEvent OnGenerated;
-    public event System.Action OnBoardGenerated;
+    public UnityEvent<Word[]> OnGenerated;
+    public event System.Action<Word[]> OnBoardGenerated;
     public UnityEvent<string> OnWordFound;
     public event System.Action<string> OnWordDiscovered;
     public UnityEvent OnAllWordsFound;
@@ -77,6 +78,8 @@ public class GameManager : MonoBehaviour
     #region Public Methods
 
     [ContextMenu("Generate Board")]
+    // Only for a temp button
+    public void Generate() => GenerateBoard();
     public List<Word> GenerateBoard() => GenerateBoard(_defaultWordCount);
     public List<Word> GenerateBoard(int wordCount)
         => GenerateBoard(
@@ -104,7 +107,14 @@ public class GameManager : MonoBehaviour
             foreach (string word in words)
             {
                 if (FitWord(word, placementSettings.Backwards, ref boardChars, ref orientationsCount, out Word wordObj))
+                {
+                    if (wordObj == null)
+                    {
+                        this.LogError("Null word out from FitWord");
+                        break;
+                    }
                     wordObjects.Add(wordObj);
+                }
             }
 
         }
@@ -136,8 +146,15 @@ public class GameManager : MonoBehaviour
         _currentGridSize = boardSize;
         _currentLetterSize = ((RectTransform)_currentGrid[0, 0].transform).rect.size;
 
-        OnBoardGenerated?.Invoke();
-        OnGenerated.Invoke();
+        if (_currentWords.Contains(null))
+        {
+            this.LogError("An null word is in the list");
+            _currentWords.RemoveAll(null);
+        }
+
+        var wordsArr = _currentWords.ToArray();
+        OnBoardGenerated?.Invoke(wordsArr);
+        OnGenerated.Invoke(wordsArr);
         return wordObjects;
     }
 
@@ -187,10 +204,11 @@ public class GameManager : MonoBehaviour
                 if (wordObj.Found)
                     return false;
 
+                wordObj.Found = true;
+
                 OnWordFound.Invoke(word);
                 OnWordDiscovered?.Invoke(word);
 
-                wordObj.Found = true;
                 if (AllWordsFound())
                 {
                     OnAllWordsDiscovered?.Invoke();
@@ -296,7 +314,6 @@ public class GameManager : MonoBehaviour
             {
                 if (success = PlaceWord(word, placement, ref grid, out wordObject))
                 {
-                    success = true;
                     orientationsCount[placement]++;
                     break;
                 }
@@ -314,6 +331,8 @@ public class GameManager : MonoBehaviour
         wordObject = null;
 
         if (word.Length > grid.GetLength(1))
+            return false;
+        if (word.Length == 0)
             return false;
 
         int xIncrement, yIncrement, maxX, maxY, minY;
@@ -428,6 +447,13 @@ public class GameManager : MonoBehaviour
         public Vector2Int Position;
         public Placement Placement;
         public bool Found = false;
+
+        public override string ToString()
+        {
+            if (Found)
+                return "<s>" + Value + "</s>";
+            return Value;
+        }
     }
     [System.Serializable]
     public struct PlacementSettings

@@ -48,7 +48,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
             Destroy(_activeSelection.gameObject);
     }
 
-    private void OnBoardGenerated()
+    private void OnBoardGenerated(GameManager.Word[] _)
     {
         _diagonalVector = (_manager.CurrentGrid[1, 1].transform as RectTransform).localPosition - (_manager.CurrentGrid[0, 0].transform as RectTransform).localPosition;
         _diagonalVector = _diagonalVector.normalized;
@@ -80,7 +80,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
             absDirX = _diagonalVector.x;
             direction.y = direction.y < 0f ? _diagonalVector.y : -_diagonalVector.y;
 
-            selectionWidth = Mathf.Lerp(_manager.CurrentLetterSize.x, _manager.CurrentLetterSize.y, 0.5f); 
+            selectionWidth = Mathf.Lerp(_manager.CurrentLetterSize.x, _manager.CurrentLetterSize.y, 0.5f);
             letterDist = _manager.CurrentLetterSize.magnitude;
         }
         else
@@ -114,7 +114,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
 
         Vector2Int intDirection = Vector2Int.RoundToInt(direction);
         intDirection.y = -intDirection.y;
-        
+
         Vector2Int coord;
         for (int i = 1; i < (distance / letterDist) + 1; i++)
         {
@@ -138,8 +138,8 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
         Vector3 localPos = ConvertPosition(eventData.position);
 
         if (_debugMarker)
-        _debugMarker.localPosition = localPos;
-        
+            _debugMarker.localPosition = localPos;
+
         if (_manager.GetLetterAtPosition(localPos, out _startLetter))
         {
             _activeSelection = GameObject.Instantiate(_selectionImagePrefab, this.transform);
@@ -151,7 +151,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
                 size.x = size.y;
 
             _activeSelection.sizeDelta = size;
-            
+
             OnDrag(eventData);
         }
     }
@@ -175,7 +175,7 @@ public class GameInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, 
 
     private Vector3 ConvertPosition(Vector2 screenPosition) =>
         GetPointOrClosestPerimeterPoint(_selectionArea, _lettersParent.InverseTransformPoint(screenPosition));
-    
+
     // Gemini Method
     /// <summary>
     /// Returns the input point if it's inside the Rect, otherwise returns the closest point on the Rect's perimeter.
