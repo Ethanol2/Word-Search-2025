@@ -10,10 +10,10 @@ public class WordSearchFont : ScriptableObject
     {
         int index = (int)letter - 65;
 
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-            this.Log($"Char: {letter}, Index: {index}");
-        #endif
+// #if UNITY_EDITOR
+//         if (!Application.isPlaying)
+//             this.Log($"Char: {letter}, Index: {index}");
+//         #endif
 
         if (index >= 0 && index < _sprites.Length)
             return _sprites[index];

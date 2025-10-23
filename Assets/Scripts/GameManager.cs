@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
     public Word[] CurrentWords => _currentWords.ToArray();
     public Letter[,] CurrentGrid => _currentGrid;
     public Vector2 CurrentLetterSize => _currentLetterSize;
+    public RectTransform LettersPanel => _letterContainer;
 
     public Color CorrectSelectionColour => _correctSelectionColour;
 
@@ -58,6 +59,8 @@ public class GameManager : MonoBehaviour
     public UnityEvent OnAllWordsFound;
     public event System.Action OnAllWordsDiscovered;
 
+    public event System.Action OnWindowResized;
+
     #endregion
 
     #region LifeCycle
@@ -71,6 +74,26 @@ public class GameManager : MonoBehaviour
     {
         if (_generateOnStart && _wordList)
             GenerateBoard();
+    }
+    void OnEnable()
+    {
+        UnityEngine.WSA.Application.windowSizeChanged += OnWindowResize;
+    }
+    void OnDisable()
+    {
+        UnityEngine.WSA.Application.windowSizeChanged -= OnWindowResize;
+    }
+
+    #endregion
+
+    #region CallBacks
+
+    private void OnWindowResize(int _, int __) => OnWindowResize();
+    [ContextMenu("On Window Resize")]
+    private void OnWindowResize()
+    {
+        _currentLetterSize = ((RectTransform)_currentGrid[0, 0].transform).rect.size;
+        OnWindowResized?.Invoke();
     }
 
     #endregion

@@ -38,7 +38,7 @@ public class WordsTracker : MonoBehaviour
 
         if (words[0].Found)
         {
-            output += $"<color=#{ColorUtility.ToHtmlStringRGBA(_foundWordColour)}>";
+            output += $"<color=#{ColorUtility.ToHtmlStringRGBA(_foundWordColour)}><size=80%>";
             foundFinished = true;
         }
 
@@ -46,7 +46,7 @@ public class WordsTracker : MonoBehaviour
         {
             if (!word.Found && foundFinished)
             {
-                output += "</color>";
+                output += "</size></color>\n";
                 foundFinished = false;
             }
             output += word + " ";
