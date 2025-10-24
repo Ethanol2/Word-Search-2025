@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f12ec3aebe35e0ebba459f790eeef139, type: 3}
+  m_Name: Astronomy
+  m_EditorClassIdentifier: 
+  _name: Astronomy
+  _wordsQuickAdd: 
+  _words:
+  - SUN
+  - MOON
+  - EARTH
+  - MERCURY
+  - VENUS
+  - MARS
+  - JUPITER
+  - SATURN
+  - URANUS
+  - NEPTUNE
+  - PLUTO
+  - ASTEROID
+  - COMET
+  - METEOR
+  - METEORITE
+  - GALAXY
+  - UNIVERSE
+  - COSMOS
+  - STAR
+  - CONSTELLATION
+  - ORBIT
+  - GRAVITY
+  - BLACKHOLE
+  - SUPERNOVA
+  - LIGHTYEAR
+  - TELESCOPE
+  - SPACE
+  - ASTRONAUT
+  - NEBULA
+  - MILKYWAY
+  - SOLAR
+  - LUNAR
+  - ECLIPSE
+  - PLANET
+  - SATELLITE
+  - CRATER
+  - COSMIC
+  - RADIATION
+  - BIGBANG
+  - ROVER
+  - OBSERVATORY
+  - ASTEROIDBELT
+  - REDGIANT
+  - WHITEDWARF
+  - QUASAR
+  - PULSAR
+  - EXOPLANET
+  - AURORA
+  - ASTROPHYSICS
+  - 'DARKMATTER
+
+'

@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Color _correctSelectionColour = Color.green;
 
     [Header("Generation Settings")]
-    [SerializeField] private WordList _wordList;
+    [SerializeField] private WordList _defaultWordList;
     [SerializeField] private bool _generateOnStart = true;
 
     [Space]
@@ -44,6 +44,7 @@ public class GameManager : MonoBehaviour
     public Letter[,] CurrentGrid => _currentGrid;
     public Vector2 CurrentLetterSize => _currentLetterSize;
     public RectTransform LettersPanel => _letterContainer;
+    public WordList DefaultWordList { get => _defaultWordList; set => _defaultWordList = value; }
 
     public Color CorrectSelectionColour => _correctSelectionColour;
 
@@ -72,16 +73,20 @@ public class GameManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (_generateOnStart && _wordList)
+        if (_generateOnStart && _defaultWordList)
             GenerateBoard();
     }
     void OnEnable()
     {
+#if false
         UnityEngine.WSA.Application.windowSizeChanged += OnWindowResize;
+#endif
     }
     void OnDisable()
     {
+#if false
         UnityEngine.WSA.Application.windowSizeChanged -= OnWindowResize;
+#endif
     }
 
     #endregion
@@ -106,7 +111,7 @@ public class GameManager : MonoBehaviour
     public List<Word> GenerateBoard() => GenerateBoard(_defaultWordCount);
     public List<Word> GenerateBoard(int wordCount)
         => GenerateBoard(
-            _wordList.GetWords(wordCount, _boardSize.x > _boardSize.y ? _boardSize.x : _boardSize.y),
+            _defaultWordList.GetWords(wordCount, _boardSize.x > _boardSize.y ? _boardSize.x : _boardSize.y),
             _boardSize,
             _defaultPlacementSettings);
 
@@ -133,7 +138,7 @@ public class GameManager : MonoBehaviour
                 {
                     if (wordObj == null)
                     {
-                        this.LogError("Null word out from FitWord");
+                        this.LogError("FitWord returned a null word. String Word: " + word);
                         break;
                     }
                     wordObjects.Add(wordObj);
@@ -169,10 +174,11 @@ public class GameManager : MonoBehaviour
         _currentGridSize = boardSize;
         _currentLetterSize = ((RectTransform)_currentGrid[0, 0].transform).rect.size;
 
+        // This really shouldn't ever trigger. But better safe than sorry.
         if (_currentWords.Contains(null))
         {
             this.LogError("An null word is in the list");
-            _currentWords.RemoveAll(null);
+            return GenerateBoard(words, boardSize, placementSettings);
         }
 
         var wordsArr = _currentWords.ToArray();
@@ -222,10 +228,15 @@ public class GameManager : MonoBehaviour
     {
         foreach (Word wordObj in _currentWords)
         {
-            if (wordObj.Value == word && wordObj.Position == coordinates)
+            if (wordObj.Value == word)
             {
                 if (wordObj.Found)
                     return false;
+
+                if (wordObj.Position != coordinates)
+                {
+                    this.Log("Word was found at an unexpected location");
+                }
 
                 wordObj.Found = true;
 
@@ -335,8 +346,9 @@ public class GameManager : MonoBehaviour
         {
             if (orientationsCount.ContainsKey(placement))
             {
-                if (success = PlaceWord(word, placement, ref grid, out wordObject))
+                if (PlaceWord(word, placement, ref grid, out wordObject))
                 {
+                    success = true;// wordObject != null;
                     orientationsCount[placement]++;
                     break;
                 }
@@ -413,25 +425,26 @@ public class GameManager : MonoBehaviour
 
                 safe = true;
 
+                char gridVal;
                 for (int i = 0; i < word.Length; i++)
                 {
-                    try
+                    if (x + (xIncrement * i) > grid.GetLength(0) || y + (yIncrement * i) > grid.GetLength(1))
                     {
-                        if (grid[x + (xIncrement * i), y + (yIncrement * i)] != '\0')
-                        {
-                            if (grid[x + (xIncrement * i), y + (yIncrement * i)] != word[i])
-                            {
-                                safe = false;
-                                break;
-                            }
-                        }
+                        this.LogError($"Word \"{word}\" went outside the grid.\n Orientation: {type}\n Position: {x}, {y}\n i: {i}, Word Length: {word.Length}"
+                            + "\n X Limits: {maxX}\n Y Limits: {minY}, {maxY} \n\n{e}");
+                        safe = false;
+                        break;
                     }
-                    catch (System.Exception e)
+
+                    gridVal = grid[x + (xIncrement * i), y + (yIncrement * i)];
+
+                    if (gridVal == '\0')
+                        continue;
+
+                    if (gridVal != word[i])
                     {
-                        this.LogError(
-                            $"Something went wrong placing the word \"{word}\" in orientation {type}\n Position: {x}, {y}\n i: {i}, Word Length: {word.Length}" +
-                            $"\n X Limits: {maxX}\n Y Limits: {minY}, {maxY} \n\n{e}");
-                        return false;
+                        safe = false;
+                        break;
                     }
                 }
 
@@ -449,14 +462,12 @@ public class GameManager : MonoBehaviour
                         Placement = type,
                     };
 
-                    break;
+                    return true;
                 }
             }
-            if (safe)
-                break;
         }
 
-        return safe;
+        return false;
     }
 
     #endregion

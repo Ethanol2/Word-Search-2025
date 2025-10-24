@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f12ec3aebe35e0ebba459f790eeef139, type: 3}
+  m_Name: Cars
+  m_EditorClassIdentifier: 
+  _name: Cars
+  _wordsQuickAdd: 
+  _words:
+  - CAR
+  - ENGINE
+  - WHEEL
+  - TIRE
+  - STEERING
+  - BRAKE
+  - GAS
+  - CLUTCH
+  - GEAR
+  - DASHBOARD
+  - SEAT
+  - TRUNK
+  - HOOD
+  - HEADLIGHT
+  - TAILLIGHT
+  - WINDOW
+  - DOOR
+  - MIRROR
+  - BUMPER
+  - LICENSE
+  - SPEEDOMETER
+  - ODOMETER
+  - FUEL
+  - EXHAUST
+  - BATTERY
+  - KEY
+  - IGNITION
+  - DRIVER
+  - PASSENGER
+  - HIGHWAY
+  - TRAFFIC
+  - GARAGE
+  - PARKING
+  - ROAD
+  - RACE
+  - DRIFT
+  - SPEED
+  - TURN
+  - HONK
+  - AIRBAG
+  - AUTOMATIC
+  - MANUAL
+  - HYBRID
+  - ELECTRIC
+  - HONDA
+  - TOYOTA
+  - FORD
+  - CHEVROLET
+  - TESLA
+  - BMW
