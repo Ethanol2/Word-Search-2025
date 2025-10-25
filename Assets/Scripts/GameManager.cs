@@ -245,8 +245,14 @@ public class GameManager : MonoBehaviour
 
                 if (AllWordsFound())
                 {
+                    Handheld.Vibrate();
+
                     OnAllWordsDiscovered?.Invoke();
                     OnAllWordsFound.Invoke();
+                }
+                else
+                {
+                    Handheld.Vibrate();
                 }
 
                 return true;
