@@ -14,7 +14,7 @@ public class InfoBar : MonoBehaviour
     }
     void FixedUpdate()
     {
-        _batteryText.text = (SystemInfo.batteryLevel * 100f) + "%";
+        _batteryText.text = (Mathf.Clamp01(SystemInfo.batteryLevel) * 100f) + "%";
         _batteryLevel.fillAmount = SystemInfo.batteryLevel;
     }
 }
